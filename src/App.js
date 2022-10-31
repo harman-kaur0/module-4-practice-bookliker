@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Container,
   Header,
@@ -7,8 +7,47 @@ import {
   List,
   Image
 } from "semantic-ui-react";
+import Book from "./Book";
 
 function App() {
+  const [books, setBooks] = useState([]);
+  const [book, setBook] = useState({});
+  const [user, setUser] = useState({});
+
+  const updateLikes =(userId, bookId) => {
+    let array = book.users.find(user => user.id === userId) ? book.users.filter(user => user.id != userId) : [...book.users, user];
+    let reqPackage = {
+      headers: {"Content-Type":"application/json"},
+      method: "PATCH",
+      body: JSON.stringify({users: array})
+    }
+    fetch(`http://localhost:3000/books/${bookId}`, reqPackage)
+    .then(res => res.json())
+    .then(data => {
+      setBook(data);
+      let updatedBooks = books.map(book => book.id === data.id ? data : book);
+      setBooks(updatedBooks);
+    });
+  };
+
+  useEffect(() => {
+    fetch('http://localhost:3000/books')
+    .then(res => res.json())
+    .then(data => setBooks(data))
+
+    fetch('http://localhost:3000/users')
+    .then(res => res.json())
+    .then(users => {
+      let user = users.find(user => user.id === 1);
+      setUser(user);
+    })
+  }, []);
+
+  const handleClick = (id)=> {
+    let book = books.find(book => book.id === id);
+    setBook(book);
+  };
+
   return (
     <div>
       <Menu inverted>
@@ -16,33 +55,13 @@ function App() {
       </Menu>
       <main>
         <Menu vertical inverted>
-          <Menu.Item as={"a"} onClick={e => console.log("book clicked!")}>
-            Book title
-          </Menu.Item>
+          {books.map(book => (
+              <div key={book.id}>
+                <a onClick={() => handleClick(book.id)}>{book.title}</a>
+              </div>
+          ))}
         </Menu>
-        <Container text>
-          <Header>Book title</Header>
-          <Image
-            src="https://react.semantic-ui.com/images/wireframe/image.png"
-            size="small"
-          />
-          <p>Book description</p>
-          <Button
-            color="red"
-            content="Like"
-            icon="heart"
-            label={{
-              basic: true,
-              color: "red",
-              pointing: "left",
-              content: "2,048"
-            }}
-          />
-          <Header>Liked by</Header>
-          <List>
-            <List.Item icon="user" content="User name" />
-          </List>
-        </Container>
+        {book.title ? <Book book={book} updateLikes={updateLikes} user={user}/> : null}
       </main>
     </div>
   );
